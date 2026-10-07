@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: online-shop
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/shop}
+    username: ${DB_USER:shop}
+    password: ${DB_PASSWORD:shop}
+    hikari:
+      maximum-pool-size: 20
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none          # Flyway owns the schema
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 200ms          # dashboards must degrade fast rather than hang on Redis
+      connect-timeout: 200ms
+  cache:
+    type: caffeine
+    cache-names: popularItems,newItems
+    # Short TTL in-process cache: absorbs the heavy read load on the two
+    # public dashboards; each instance hits Redis/DB at most once per 10s.
+    caffeine:
+      spec: maximumSize=16,expireAfterWrite=10s
+
+shop:
+  scheduling:
+    enabled: true
+  cart:
+    hold-duration: PT15M            # how long a high-demand item stays in the cart
+    max-quantity-per-item: 10
+    expiry-sweep-interval: PT15S
+    expiry-sweep-batch-size: 200
+  dashboard:
+    max-items: 50
+    popularity-window-days: 7
+    popular-refresh-interval: PT1M
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
